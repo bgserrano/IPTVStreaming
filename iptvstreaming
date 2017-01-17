@@ -1,0 +1,86 @@
+#! /bin/bash
+
+#**********************************************************
+#   Created on 2017-01-17 by liuxiaohu
+#   
+#   iptvstreaming       This shell scripts related to start
+#                       and stop of the iptv streaming 
+#                       process
+#   
+#   chkconfig: 2345 80 30
+#   description: iptv streaming service
+#
+#**********************************************************
+
+# source function library
+if [ -f /etc/init.d/functions ]; then
+    . /etc/init.d/functions
+elif [ -f /etc/rc.d/init.d/functions ]; then
+    . /etc/rc.d/init.d/functions
+else
+    exit 0
+fi
+
+RETVAL=0
+
+# start all streams
+start() {
+    count=`ps -ef|grep ffmpeg|grep -v grep|wc -l`
+    if [ $count -eq 0 ]; then
+        #start
+        RETVAL=$?
+    else
+        echo 'All streams have been started, please try restart instead.'
+        RETVAL=1
+    fi
+    [ $RETVAL -eq 0 ] && echo_success
+    [ $RETVAL -eq 1 ] && echo_failure
+    echo
+    return $RETVAL
+}
+
+# stop all streams
+stop () {
+    count=`ps -ef|grep ffmpeg|grep -v grep|wc -l`
+    if [ $count -eq 0 ]; then
+        echo 'There is no stream running, please start first'
+        RETVAL=1
+    else
+        $stop
+        RETVAL=$?
+    fi
+    [ $RETVAL -eq 0 ] && echo_success
+    [ $RETVAL -eq 1 ] && echo_failure
+    echo
+    return $RETVAL
+}
+
+# restart all streams
+restart() {
+    stop
+    start
+}
+
+# status of all streams
+iptvstatus() {
+    count=`ps -ef|grep ffmpeg|grep -v grep|wc -l`  
+}
+
+# service command
+case "$1" in
+    start)
+        start
+        ;;
+    stop)
+        stop
+        ;;
+    restart)
+        restart
+        ;;
+    status)
+        iptvstatus
+        ;;
+    *)
+        echo "Usage:"
+        exit 1
+esac
