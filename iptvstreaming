@@ -21,13 +21,15 @@ else
     exit 0
 fi
 
+. ./lib/functions
+
 RETVAL=0
 
 # start all streams
 start() {
     count=`ps -ef|grep ffmpeg|grep -v grep|wc -l`
     if [ $count -eq 0 ]; then
-        #start
+        startAllStreams
         RETVAL=$?
     else
         echo 'All streams have been started, please try restart instead.'

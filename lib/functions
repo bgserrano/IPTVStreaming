@@ -1,0 +1,69 @@
+#! /bin/bash
+
+#************************************************
+#   Created on 2017-01-17 by liuxiaohu 
+#
+#   Desc: Functions that iptvstreaming will use
+#************************************************
+
+# source configuration file
+. /usr/local/IPTVStreaming/cfg/iptvstreaming.cfg
+
+xmllintCmd=`which xmllint`
+ffmpegCmd=`which ffmpeg`
+
+# parse xml node to stream files whose name is name node and content is source node 
+xml2streams() {
+    if [ ! -f $xmlPath ]; then
+        echo "xml file doesn't exist."
+        exit 1
+    fi
+    local num=`$xmllintCmd --xpath "count(/message/Stream)" $xmlPath`
+    local i=1
+    while [[ $i -le $num ]]
+        do
+            local name=`$xmllintCmd --xpath "/message/Stream[$i]/name/text()" $xmlPath`
+            local source=`$xmllintCmd --xpath "/message/Stream[$i]/source/text()" $xmlPath`
+            if [ ! -d $streamPath ]; then
+                mkdir -p $streamPath
+            fi
+            echo $source > $streamPath/$name
+            (( i=i+1 ))
+        done
+}
+
+# clear the stream files and hls files
+clearStreams(){
+    rm -rf $streamPath
+    rm -rf $hlsPath
+}
+
+# start streaming source
+startAllStreams(){
+    xml2streams
+    if [ ! -d $hlsPath ]; then
+        mkdir -p $hlsPath
+    fi
+    if [ ! -d $logPath ]; then
+        mkdir -p $logPath
+    fi
+    if [ ! -d $runPath ]; then
+        mkdir -p $runPath
+    fi
+    for name in `ls $streamPath`
+        do
+            mkdir -p $hlsPath/$name
+            local source=`head -1 $streamPath/name`
+            $ffmpegCmd -y -timeout 10 -re -i $source -c:v copy -bsf:v h264_mp4toannexb -f hls -hls_list_size 6 -hls_warp 10 -hls_time 6 $hlsPath/$name/$name.m3u8 > /dev/null 2>&1
+            echo $! > $runPath/$name.pid
+            echo "$(date '+%Y-%m-%d %H:%M:%S')  $name   started" >> $logPath/iptvstreaming.log
+        done
+}
+
+# stop streaming source
+stopAllStreams(){
+}
+
+# check the streams status
+rotateCheck() {
+}
