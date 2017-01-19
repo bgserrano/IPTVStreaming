@@ -1,0 +1,30 @@
+#! /bin/bash
+
+# source configuration file
+. /usr/local/IPTVStreaming/cfg/iptvstreaming.cfg
+
+# source functions
+. /usr/local/IPTVStreaming/lib/functions
+
+# check the streams status
+rotateCheck() {
+    disconnect=0
+    for pidFile in `ls $runPath`
+        do
+            if [ -f $runPath/$pidFile ]; then
+                local pid=`head -1 $runPath/$pidFile`
+                local count=`ps -ef|awk '{print $2}'|grep $pid|wc -l`
+                if [ $count -eq 0 ]; then
+                    (( disconnect++ ))
+                    local name=${pidFile%.*}
+                    startStream $name
+                fi                    
+            fi
+        done
+}
+
+while true
+    do
+        rotateCheck
+        sleep $checkInterval
+    done

@@ -12,35 +12,11 @@
 xmllintCmd=`which xmllint`
 ffmpegCmd=`which ffmpeg`
 
-# parse xml node to stream files whose name is name node and content is source node 
-xml2streams() {
-    if [ ! -f $xmlPath ]; then
-        echo "xml file doesn't exist."
-        exit 1
+# initialize the directories
+initDir() {
+    if [ ! -d $streamPath ]; then
+        mkdir -p $streamPath
     fi
-    local num=`$xmllintCmd --xpath "count(/message/Stream)" $xmlPath`
-    local i=1
-    while [[ $i -le $num ]]
-        do
-            local name=`$xmllintCmd --xpath "/message/Stream[$i]/name/text()" $xmlPath`
-            local source=`$xmllintCmd --xpath "/message/Stream[$i]/source/text()" $xmlPath`
-            if [ ! -d $streamPath ]; then
-                mkdir -p $streamPath
-            fi
-            echo $source > $streamPath/$name
-            (( i=i+1 ))
-        done
-}
-
-# clear the stream files and hls files
-clearStreams(){
-    rm -rf $streamPath
-    rm -rf $hlsPath
-}
-
-# start streaming source
-startAllStreams(){
-    xml2streams
     if [ ! -d $hlsPath ]; then
         mkdir -p $hlsPath
     fi
@@ -50,20 +26,70 @@ startAllStreams(){
     if [ ! -d $runPath ]; then
         mkdir -p $runPath
     fi
+}
+
+# remove all directories that have been initialized except logs
+rmDir() {
+    if [ -d $streamPath ]; then
+        rm -rf $streamPath
+    fi
+    if [ -d $hlsPath ]; then
+        rm -rf $hlsPath
+    fi
+    if [ -d $runPath ]; then
+        rm -rf $runPath
+    fi
+}
+
+# parse xml node to stream files whose name is name node and content is source node 
+xml2streams() {
+    if [ ! -f $xmlPath ]; then
+        echo "xml file doesn't exist."
+        return 1
+    fi
+    local num=`$xmllintCmd --xpath "count(/message/Stream)" $xmlPath`
+    local i=1
+    while [[ $i -le $num ]]
+        do
+            local name=`$xmllintCmd --xpath "/message/Stream[$i]/name/text()" $xmlPath`
+            local source=`$xmllintCmd --xpath "/message/Stream[$i]/source/text()" $xmlPath`
+            echo $source > $streamPath/$name
+            (( i++ ))
+        done
+    return 0
+}
+
+# start a stream by stream file
+startStream() {
+    local name=$1
+    mkdir -p $hlsPath/$name
+    local source=`head -1 $streamPath/$name`
+    $ffmpegCmd -y -timeout 10 -re -i $source -c:v copy -bsf:v h264_mp4toannexb -f hls -hls_list_size 5 -hls_wrap 10 -hls_time 10 $hlsPath/$name/$name.m3u8 2>&1
+    echo $! > $runPath/$name.pid
+    echo "INFO: $(date '+%Y-%m-%d %H:%M:%S')    $name   start" >> $logPath/iptvstreaming.log
+    return 0
+}
+
+# start streaming source
+startAllStreams(){
+    initDir
+    xml2streams
+    if [ $? -ne 0 ]; then
+    	rmDir
+        return 1
+    fi
     for name in `ls $streamPath`
         do
-            mkdir -p $hlsPath/$name
-            local source=`head -1 $streamPath/name`
-            $ffmpegCmd -y -timeout 10 -re -i $source -c:v copy -bsf:v h264_mp4toannexb -f hls -hls_list_size 6 -hls_warp 10 -hls_time 6 $hlsPath/$name/$name.m3u8 > /dev/null 2>&1
-            echo $! > $runPath/$name.pid
-            echo "$(date '+%Y-%m-%d %H:%M:%S')  $name   started" >> $logPath/iptvstreaming.log
+            startStream $name
         done
+    $binPath/iptvd &
+    return 0
 }
 
-# stop streaming source
+# stop checking,streaming source and remove all additional directories
 stopAllStreams(){
-}
-
-# check the streams status
-rotateCheck() {
+    ps -ef|grep iptvd|grep -v grep|awk '{print $2}'|xargs kill -9
+    ps -ef|grep ffmpeg|grep -v grep|awk '{print $2}'|xargs kill -9
+    rmDir
+    return 0
 }
