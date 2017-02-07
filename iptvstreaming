@@ -35,12 +35,12 @@ RETVAL=0
 
 # start all streams
 start() {
-    count=`ps -ef|grep ffmpeg|grep -v grep|wc -l`
+    local count=`ps -ef|grep iptvd|grep -v grep|wc -l`
     if [ $count -eq 0 ]; then
         startAllStreams
         RETVAL=$?
     else
-        echo 'All streams have been started, please try restart instead.'
+        echo 'IPTVStreaming has been started, please try restart instead.'
         RETVAL=1
     fi
     [ $RETVAL -eq 0 ] && echo_success
@@ -51,9 +51,9 @@ start() {
 
 # stop all streams
 stop () {
-    count=`ps -ef|grep iptvd|grep -v grep|wc -l`
+    local count=`ps -ef|grep iptvd|grep -v grep|wc -l`
     if [ $count -eq 0 ]; then
-        echo 'There is no stream running, please start first'
+        echo 'IPTVStremaing not running, please start first'
         RETVAL=1
     else
         stopAllStreams
@@ -73,7 +73,13 @@ restart() {
 
 # status of all streams
 iptvstatus() {
-    count=`ps -ef|grep ffmpeg|grep -v grep|wc -l`  
+    local count=`ps -ef|grep iptvd|grep -v grep|wc -l`
+    if [ $count -eq 0 ]; then
+        echo 'IPTVStreaming not running.'
+    else
+        count=`ps -ef|grep ffmpeg|grep -v grep|wc -l`
+        echo "IPTVStreaming is running. There are $count streams running."
+    fi
 }
 
 # service command

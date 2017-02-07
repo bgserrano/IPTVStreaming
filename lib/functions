@@ -44,7 +44,7 @@ rmDir() {
 # parse xml node to stream files whose name is name node and content is source node 
 xml2streams() {
     if [ ! -f $xmlPath ]; then
-        echo "xml file doesn't exist."
+        echo "xml file doesn't exist in $xmlPath ."
         return 1
     fi
     local num=`$xmllintCmd --xpath "count(/message/Stream)" $xmlPath`
@@ -64,9 +64,9 @@ startStream() {
     local name=$1
     mkdir -p $hlsPath/$name
     local source=`head -1 $streamPath/$name`
-    $ffmpegCmd -y -timeout 10 -re -i $source -c:v copy -bsf:v h264_mp4toannexb -f hls -hls_list_size 5 -hls_wrap 10 -hls_time 10 $hlsPath/$name/$name.m3u8 2>&1
+    $ffmpegCmd -y -timeout 10 -re -i $source -c:v copy -bsf:v h264_mp4toannexb -f hls -hls_list_size 5 -hls_wrap 10 -hls_time 10 $hlsPath/$name/$name.m3u8 > /dev/null 2>&1 &
     echo $! > $runPath/$name.pid
-    echo "INFO: $(date '+%Y-%m-%d %H:%M:%S')    $name   start" >> $logPath/iptvstreaming.log
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] [INFO] $name start" >> $logPath/iptvstreaming.log
     return 0
 }
 
@@ -83,13 +83,18 @@ startAllStreams(){
             startStream $name
         done
     $binPath/iptvd &
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] [INFO] iptvstreaming start manually" >> $logPath/iptvstreaming.log
     return 0
 }
 
 # stop checking,streaming source and remove all additional directories
 stopAllStreams(){
     ps -ef|grep iptvd|grep -v grep|awk '{print $2}'|xargs kill -9
-    ps -ef|grep ffmpeg|grep -v grep|awk '{print $2}'|xargs kill -9
+    local count=`ps -ef|grep ffmpeg|grep -v grep|wc -l`
+    if [ $count -ne 0 ]; then
+        ps -ef|grep ffmpeg|grep -v grep|awk '{print $2}'|xargs kill -9
+    fi
     rmDir
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] [INFO] iptvstreaming stop manually" >> $logPath/iptvstreaming.log
     return 0
 }

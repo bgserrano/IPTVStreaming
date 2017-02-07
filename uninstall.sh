@@ -1,17 +1,14 @@
 #! /bin/bash
 
-/etc/init.d/iptvstreaming stop
+installPath=/usr/local/IPTVStreaming
 
-# remove the service
-if [ -f /etc/init.d/iptvstreaming ]; then
-    rm /etc/init.d/iptvstreaming
+count=`ps -ef|grep iptvd|grep -v grep|wc -l`
+if [ $count -ne 0 ]; then
+    $installPath/iptvstreaming stop
 fi
 
-if [ -f /etc/rc.d/init.d/iptvstreaming ]; then
-    rm /etc/rc.d/init.d/iptvstreaming
-fi
 
 # remove deloyed iptv stremaing
-if [ -d /usr/local/IPTVStreaming ]; then
-    rm -rf /usr/local/IPTVStreaming
+if [ -d $installPath ]; then
+    rm -rf $installPath 
 fi

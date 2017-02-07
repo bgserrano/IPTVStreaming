@@ -8,19 +8,27 @@
 
 # check the streams status
 rotateCheck() {
-    disconnect=0
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] [INFO] rotate check begin" >> $logPath/iptvstreaming.log
+    local all=0
+    local disconnect=0
     for pidFile in `ls $runPath`
         do
             if [ -f $runPath/$pidFile ]; then
+                (( all++ ))
                 local pid=`head -1 $runPath/$pidFile`
                 local count=`ps -ef|awk '{print $2}'|grep $pid|wc -l`
                 if [ $count -eq 0 ]; then
                     (( disconnect++ ))
                     local name=${pidFile%.*}
+                    echo "[$(date '+%Y-%m-%d %H:%M:%S')] [ERROR] $name stoped" >> $logPath/iptvstreaming.log
                     startStream $name
                 fi                    
             fi
         done
+    if [ $disconnect -ne 0 ]; then
+        echo "[$(date '+%Y-%m-%d %H:%M:%S')] [FATAL] there are $disconnect/$all streams disconnected" >> $logPath/iptvstreaming.log
+    fi
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] [INFO] rotate check end" >> $logPath/iptvstreaming.log
 }
 
 while true

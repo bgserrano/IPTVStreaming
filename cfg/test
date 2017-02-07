@@ -1,5 +1,0 @@
-#! /bin/bash
-
-. iptvstreaming.cfg
-
-echo $xmlPath
