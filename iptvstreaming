@@ -22,10 +22,10 @@
 #fi
 #
 # source networking configuration
-. /etc/sysconfig/network
+#. /etc/sysconfig/network
 
 # check that networking is up
-[ "${NETWORKING}" = "no" ] && exit 0
+#[ "${NETWORKING}" = "no" ] && exit 0
 
 # source iptv streaming functions
 . /usr/local/IPTVStreaming/lib/functions

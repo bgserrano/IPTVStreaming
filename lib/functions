@@ -40,7 +40,7 @@ rmDir() {
 
 # parse xml node to stream files whose name is name node and content is source node 
 xml2streams() {
-    xmllintCmd=`which xmllint`
+    pythonCmd=`which python`
     if [ $? -ne 0 ]; then
         echo -e "[\033[1;31mERROR:\033[0m] xmllint is not installed"
         return 1
@@ -49,19 +49,11 @@ xml2streams() {
         echo -e "[\033[1;31mERROR:\033[0m] xml file doesn't exist in $xmlPath"
         return 1
     fi
-    local num=`$xmllintCmd --xpath "count(/message/Stream)" $xmlPath`
+    $pythonCmd $libPath/xmlParser.py $xmlPath $streamPath
     if [ $? -ne 0 ]; then
-        echo -e "[\033[1;31mERROR:\033[0m] xmllint unknown option --xpath "
+        echo -e "[\033[1;31mERROR:\033[0m] xmlFile to stream files failed"
         return 1
     fi
-    local i=1
-    while [[ $i -le $num ]]
-        do
-            local name=`$xmllintCmd --xpath "/message/Stream[$i]/name/text()" $xmlPath`
-            local source=`$xmllintCmd --xpath "/message/Stream[$i]/source/text()" $xmlPath`
-            echo $source > $streamPath/$name
-            (( i++ ))
-        done
     return 0
 }
 
