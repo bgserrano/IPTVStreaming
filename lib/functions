@@ -61,7 +61,7 @@ xml2streams() {
 startStream() {
     ffmpegCmd=`which ffmpeg`
     if [ $? -ne 0 ]; then
-        echo "error: ffmpeg is not installed"
+        echo -e "[\033[1;31mERROR:\033[0m] ffmpeg is not installed"
         return 1
     fi
     local name=$1
