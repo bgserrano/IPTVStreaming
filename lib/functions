@@ -42,16 +42,16 @@ rmDir() {
 xml2streams() {
     xmllintCmd=`which xmllint`
     if [ $? -ne 0 ]; then
-        echo "error: xmllint is not installed"
+        echo -e "[\033[1;31mERROR:\033[0m] xmllint is not installed"
         return 1
     fi
     if [ ! -f $xmlPath ]; then
-        echo "error: xml file doesn't exist in $xmlPath"
+        echo -e "[\033[1;31mERROR:\033[0m] xml file doesn't exist in $xmlPath"
         return 1
     fi
     local num=`$xmllintCmd --xpath "count(/message/Stream)" $xmlPath`
     if [ $? -ne 0 ]; then
-        echo "error: xmllint unknown option --xpath "
+        echo -e "[\033[1;31mERROR:\033[0m] xmllint unknown option --xpath "
         return 1
     fi
     local i=1
@@ -111,4 +111,32 @@ stopAllStreams(){
     rmDir
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] [INFO] iptvstreaming stop manually" >> $logPath/iptvstreaming.log
     return 0
+}
+
+RES_COL=60
+MOVE_TO_COL="echo -en \\033[${RES_COL}G"
+SETCOLOR_SUCCESS="echo -en \\033[1;32m"
+SETCOLOR_FAILURE="echo -en \\033[1;31m"
+SETCOLOR_NORMAL="echo -en \\033[0;39m"
+
+echo_success() {
+    $MOVE_TO_COL
+    echo -n "["
+    $SETCOLOR_SUCCESS
+    echo -n $"  OK  "
+    $SETCOLOR_NORMAL
+    echo -n "]"
+    echo -ne "\r"
+    return 0
+}
+
+echo_failure() {
+    $MOVE_TO_COL
+    echo -n "["
+    $SETCOLOR_FAILURE
+    echo -n $"  FAILED  "
+    $SETCOLOR_NORMAL
+    echo -n "]"
+    echo -ne "\r"
+    return 1
 }

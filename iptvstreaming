@@ -13,14 +13,14 @@
 #**********************************************************
 
 # source function library
-if [ -f /etc/init.d/functions ]; then
-    . /etc/init.d/functions
-elif [ -f /etc/rc.d/init.d/functions ]; then
-    . /etc/rc.d/init.d/functions
-else
-    exit 0
-fi
-
+#if [ -f /etc/init.d/functions ]; then
+#    . /etc/init.d/functions
+#elif [ -f /etc/rc.d/init.d/functions ]; then
+#    . /etc/rc.d/init.d/functions
+#else
+#    exit 0
+#fi
+#
 # source networking configuration
 . /etc/sysconfig/network
 
@@ -40,7 +40,7 @@ start() {
         startAllStreams
         RETVAL=$?
     else
-        echo 'error: IPTVStreaming has been started, please try restart instead.'
+        echo -e "[\033[1;31mERROR:\033[0m] IPTVStreaming has been started, please try restart instead"
         RETVAL=1
     fi
     echo -n "start iptvstreaming: "
@@ -54,7 +54,7 @@ start() {
 stop () {
     local count=`ps -ef|grep iptvd|grep -v grep|wc -l`
     if [ $count -eq 0 ]; then
-        echo 'error: IPTVStremaing not running, please start first'
+        echo -e "[\033[1;31mERROR:\033[0m] IPTVStremaing not running, please start first"
         RETVAL=1
     else
         stopAllStreams
@@ -77,10 +77,10 @@ restart() {
 iptvstatus() {
     local count=`ps -ef|grep iptvd|grep -v grep|wc -l`
     if [ $count -eq 0 ]; then
-        echo 'IPTVStreaming not running.'
+        echo -e "[\033[1;32mSTATUS:\033[0m]IPTVStreaming not running."
     else
         count=`ps -ef|grep ffmpeg|grep -v grep|wc -l`
-        echo "IPTVStreaming is running. There are $count streams running."
+        echo -e "[\033[1;32mSTATUS:\033[0m] IPTVStreaming is running. There are $count streams running."
     fi
 }
 
@@ -99,7 +99,7 @@ case "$1" in
         iptvstatus
         ;;
     *)
-        echo $"Usage: $BASENAME {start|stop|restart|status}"
+        echo -e $"[\033[1;32mUsage:\033[0m] $BASENAME {start|stop|restart|status}"
         exit 1
 esac
 

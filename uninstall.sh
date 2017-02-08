@@ -7,8 +7,11 @@ if [ $count -ne 0 ]; then
     $installPath/iptvstreaming stop
 fi
 
+echo "uninstall iptv streaming..."
 
 # remove deloyed iptv stremaing
 if [ -d $installPath ]; then
     rm -rf $installPath 
 fi
+
+echo "uninstall successfully"
