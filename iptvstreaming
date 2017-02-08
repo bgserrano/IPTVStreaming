@@ -40,9 +40,10 @@ start() {
         startAllStreams
         RETVAL=$?
     else
-        echo 'IPTVStreaming has been started, please try restart instead.'
+        echo 'error: IPTVStreaming has been started, please try restart instead.'
         RETVAL=1
     fi
+    echo -n "start iptvstreaming: "
     [ $RETVAL -eq 0 ] && echo_success
     [ $RETVAL -eq 1 ] && echo_failure
     echo
@@ -53,12 +54,13 @@ start() {
 stop () {
     local count=`ps -ef|grep iptvd|grep -v grep|wc -l`
     if [ $count -eq 0 ]; then
-        echo 'IPTVStremaing not running, please start first'
+        echo 'error: IPTVStremaing not running, please start first'
         RETVAL=1
     else
         stopAllStreams
         RETVAL=$?
     fi
+    echo -n "stop iptvstreaming: "
     [ $RETVAL -eq 0 ] && echo_success
     [ $RETVAL -eq 1 ] && echo_failure
     echo

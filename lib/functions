@@ -9,9 +9,6 @@
 # source configuration file
 . /usr/local/IPTVStreaming/cfg/iptvstreaming.cfg
 
-xmllintCmd=`which xmllint`
-ffmpegCmd=`which ffmpeg`
-
 # initialize the directories
 initDir() {
     if [ ! -d $streamPath ]; then
@@ -43,11 +40,20 @@ rmDir() {
 
 # parse xml node to stream files whose name is name node and content is source node 
 xml2streams() {
+    xmllintCmd=`which xmllint`
+    if [ $? -ne 0 ]; then
+        echo "error: xmllint is not installed"
+        return 1
+    fi
     if [ ! -f $xmlPath ]; then
-        echo "xml file doesn't exist in $xmlPath ."
+        echo "error: xml file doesn't exist in $xmlPath"
         return 1
     fi
     local num=`$xmllintCmd --xpath "count(/message/Stream)" $xmlPath`
+    if [ $? -ne 0 ]; then
+        echo "error: xmllint unknown option --xpath "
+        return 1
+    fi
     local i=1
     while [[ $i -le $num ]]
         do
@@ -61,6 +67,11 @@ xml2streams() {
 
 # start a stream by stream file
 startStream() {
+    ffmpegCmd=`which ffmpeg`
+    if [ $? -ne 0 ]; then
+        echo "error: ffmpeg is not installed"
+        return 1
+    fi
     local name=$1
     mkdir -p $hlsPath/$name
     local source=`head -1 $streamPath/$name`
@@ -81,6 +92,9 @@ startAllStreams(){
     for name in `ls $streamPath`
         do
             startStream $name
+            if [ $? -ne 0 ]; then
+                return 1
+            fi
         done
     $binPath/iptvd &
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] [INFO] iptvstreaming start manually" >> $logPath/iptvstreaming.log

@@ -26,6 +26,7 @@ sed -i "s%/usr/local/IPTVStreaming%$installPath%g" uninstall.sh
 # for xmllint command
 echo 'yum install xmllint'
 #yum -y install libxml2
+#apt-get install libxml2-utils
 
 # intallPathstall ffmpeg (default installed)
 
