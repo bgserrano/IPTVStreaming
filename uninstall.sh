@@ -14,4 +14,4 @@ if [ -d $installPath ]; then
     rm -rf $installPath 
 fi
 
-echo "uninstall successfully"
+echo -e "[\033[1;32mSTATUS:\033[0m] uninstall successfully"

@@ -23,11 +23,17 @@ sed -i "s%/usr/local/IPTVStreaming%$installPath%g" $installPath/lib/functions
 sed -i "s%/usr/local/IPTVStreaming%$installPath%g" $installPath/bin/iptvd
 sed -i "s%/usr/local/IPTVStreaming%$installPath%g" uninstall.sh
 
-# for xmllint command
-echo 'yum install xmllint'
-#yum -y install libxml2
-#apt-get install libxml2-utils
+# for python command
+echo 'install python...'
+system=$(set `head -1 /etc/issue`;echo $1)
+if (`test $system = 'CentOS'`); then
+    yum -y install python
+elif (`test $system = 'Ubuntu'`); then
+    apt-get -y install python
+else
+    echo -e "[\033[1;31mWARNING:\033[0m] If you should install python by yourself"
+fi
 
 # intallPathstall ffmpeg (default installed)
 
-echo 'Install successfully'
+echo -e "[\033[1;32mSTATUS:\033[0m] Install successfully"
