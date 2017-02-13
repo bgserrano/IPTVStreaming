@@ -13,14 +13,14 @@ echo "copy iptvstreaming service to $installPath"
 cp iptvstreaming $installPath
 
 echo "copy iptv streaming to $installPath"
-cp -r bin/ lib/ cfg/ $installPath
+cp -r daemon/ lib/ cfg/ $installPath
 
 echo "replace the absolute path with $installPath"
 # replace the absolute path with installation path
 sed -i "s%/usr/local/IPTVStreaming%$installPath%g" $installPath/iptvstreaming
 sed -i "s%/usr/local/IPTVStreaming%$installPath%g" $installPath/cfg/iptvstreaming.cfg
 sed -i "s%/usr/local/IPTVStreaming%$installPath%g" $installPath/lib/functions
-sed -i "s%/usr/local/IPTVStreaming%$installPath%g" $installPath/bin/iptvd
+sed -i "s%/usr/local/IPTVStreaming%$installPath%g" $installPath/daemon/iptvstreamingd
 sed -i "s%/usr/local/IPTVStreaming%$installPath%g" uninstall.sh
 
 # for python command
@@ -31,7 +31,7 @@ if (`test $system = 'CentOS'`); then
 elif (`test $system = 'Ubuntu'`); then
     apt-get -y install python
 else
-    echo -e "[\033[1;31mWARNING:\033[0m] If you should install python by yourself"
+    echo -e "[\033[1;31mWARNING:\033[0m] you should install python by yourself"
 fi
 
 # intallPathstall ffmpeg (default installed)

@@ -2,7 +2,7 @@
 
 installPath=/usr/local/IPTVStreaming
 
-count=`ps -ef|grep iptvd|grep -v grep|wc -l`
+count=`ps -ef|grep iptvstreamingd|grep -v grep|wc -l`
 if [ $count -ne 0 ]; then
     $installPath/iptvstreaming stop
 fi

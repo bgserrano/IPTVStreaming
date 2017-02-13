@@ -35,7 +35,7 @@ RETVAL=0
 
 # start all streams
 start() {
-    local count=`ps -ef|grep iptvd|grep -v grep|wc -l`
+    local count=`ps -ef|grep iptvstreamingd|grep -v grep|wc -l`
     if [ $count -eq 0 ]; then
         startAllStreams
         RETVAL=$?
@@ -52,7 +52,7 @@ start() {
 
 # stop all streams
 stop () {
-    local count=`ps -ef|grep iptvd|grep -v grep|wc -l`
+    local count=`ps -ef|grep iptvstreamingd|grep -v grep|wc -l`
     if [ $count -eq 0 ]; then
         echo -e "[\033[1;31mERROR:\033[0m] IPTVStremaing not running, please start first"
         RETVAL=1
@@ -75,7 +75,7 @@ restart() {
 
 # status of all streams
 iptvstatus() {
-    local count=`ps -ef|grep iptvd|grep -v grep|wc -l`
+    local count=`ps -ef|grep iptvstreamingd|grep -v grep|wc -l`
     if [ $count -eq 0 ]; then
         echo -e "[\033[1;32mSTATUS:\033[0m]IPTVStreaming not running."
     else

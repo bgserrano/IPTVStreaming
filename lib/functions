@@ -88,14 +88,14 @@ startAllStreams(){
                 return 1
             fi
         done
-    $binPath/iptvd &
+    $daemonPath/iptvstreamingd &
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] [INFO] iptvstreaming start manually" >> $logPath/iptvstreaming.log
     return 0
 }
 
 # stop checking,streaming source and remove all additional directories
 stopAllStreams(){
-    ps -ef|grep iptvd|grep -v grep|awk '{print $2}'|xargs kill -9
+    ps -ef|grep iptvstreamingd|grep -v grep|awk '{print $2}'|xargs kill -9
     local count=`ps -ef|grep ffmpeg|grep -v grep|wc -l`
     if [ $count -ne 0 ]; then
         ps -ef|grep ffmpeg|grep -v grep|awk '{print $2}'|xargs kill -9
