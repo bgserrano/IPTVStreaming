@@ -23,7 +23,8 @@ After installation, you may see these file in /usr/local/IPTVStreaming folder:
 
 * you cn modify the installation path which is /usr/local/IPTVStreaming by default in install.sh
 * you should provide a streams.xml file and put it to xml path configured in iptvstreaming.cfg file, xml file format as follows:  
-    ```
+    ``` xml
+    
     <message>  
         <Stream>  
             <streamName></streamName>  
