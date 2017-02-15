@@ -23,6 +23,7 @@ After installation, you may see these file in /usr/local/IPTVStreaming folder:
 
 * you cn modify the installation path which is /usr/local/IPTVStreaming by default in install.sh
 * you should provide a streams.xml file and put it to xml path configured in iptvstreaming.cfg file, xml file format as follows:  
+    ```
     <message>  
         <Stream>  
             <streamName></streamName>  
@@ -33,6 +34,7 @@ After installation, you may see these file in /usr/local/IPTVStreaming folder:
         ...  
         </Stream>  
     </message>
+    ```
 * you can also modify the hls path, log path and pid path, which will be created when iptvstreaming start
 * set check interval whatever you want 
 
