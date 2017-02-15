@@ -25,6 +25,7 @@ After installation, you may see these file in /usr/local/IPTVStreaming folder:
 * you should provide a streams.xml file and put it to xml path configured in iptvstreaming.cfg file, xml file format as follows:  
     ``` xml
     <message>  
+    
         <Stream>  
             <streamName></streamName>  
             <source></source>  
