@@ -4,7 +4,7 @@
 . /usr/local/IPTVStreaming/cfg/iptvstreaming.cfg
 
 # source functions
-. /usr/local/IPTVStreaming/lib/functions
+. $libPath/functions
 
 # check the streams status
 rotateCheck() {

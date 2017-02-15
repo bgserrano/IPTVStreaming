@@ -17,10 +17,7 @@ cp -r daemon/ lib/ cfg/ $installPath
 
 echo "replace the absolute path with $installPath"
 # replace the absolute path with installation path
-sed -i "s%/usr/local/IPTVStreaming%$installPath%g" $installPath/iptvstreaming
-sed -i "s%/usr/local/IPTVStreaming%$installPath%g" $installPath/cfg/iptvstreaming.cfg
-sed -i "s%/usr/local/IPTVStreaming%$installPath%g" $installPath/lib/functions
-sed -i "s%/usr/local/IPTVStreaming%$installPath%g" $installPath/daemon/iptvstreamingd
+sed -i "s%/usr/local/IPTVStreaming%$installPath%g" `grep /usr/local/IPTVStreaming -rl $installPath`
 sed -i "s%/usr/local/IPTVStreaming%$installPath%g" uninstall.sh
 
 # for python command

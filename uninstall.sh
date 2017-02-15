@@ -4,12 +4,13 @@ installPath=/usr/local/IPTVStreaming
 
 count=`ps -ef|grep iptvstreamingd|grep -v grep|wc -l`
 if [ $count -ne 0 ]; then
+    echo "stop iptvagent..."
     $installPath/iptvstreaming stop
 fi
 
 echo "uninstall iptv streaming..."
 
-# remove deloyed iptv stremaing
+# remove deployed iptv stremaing
 if [ -d $installPath ]; then
     rm -rf $installPath 
 fi

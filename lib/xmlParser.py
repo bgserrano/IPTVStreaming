@@ -7,7 +7,7 @@ try:
     root = tree.getroot()
     
     for stream in root.findall('Stream'):
-        name = stream.findtext('name')
+        name = stream.findtext('streamName')
         source = stream.findtext('source')
         cmd = 'echo '+source+' > '+sys.argv[2]+'/'+name
         os.system(cmd)
