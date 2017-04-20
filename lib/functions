@@ -11,14 +11,17 @@
 
 # initialize the directories
 initDir() {
-    if [ ! -d $streamPath ]; then
-        mkdir -p $streamPath
+    if [ $streamOrigin = xml ]; then
+        if [ ! -d $streamPath ]; then
+            mkdir -p $streamPath
+        fi
     fi
     if [ ! -d $hlsPath ]; then
         mkdir -p $hlsPath
     fi
     if [ ! -d $logPath ]; then
         mkdir -p $logPath
+        mkdir -p $logPath/streams
     fi
     if [ ! -d $runPath ]; then
         mkdir -p $runPath
@@ -59,6 +62,7 @@ xml2streams() {
 
 # start a stream by stream file
 startStream() {
+    initDir
     ffmpegCmd=`which ffmpeg`
     if [ $? -ne 0 ]; then
         echo -e "[\033[1;31mERROR:\033[0m] ffmpeg is not installed"
@@ -66,43 +70,178 @@ startStream() {
     fi
     local name=$1
     mkdir -p $hlsPath/$name
-    local source=`head -1 $streamPath/$name`
-    $ffmpegCmd -y -rw_timeout 1000000 -re -i $source -a:v copy -c:v copy -bsf:v h264_mp4toannexb -f hls -hls_list_size 5 -hls_wrap 10 -hls_time 10 $hlsPath/$name/$name.m3u8 > /dev/null 2>&1 &
-    echo $! > $runPath/$name.pid
+    local source=$2
+    local count=0
+    if [ -f $runPath/${name}.pid ]; then
+        local pid=`head -1 $runPath/${name}.pid`
+        if [ -d /proc/$pid ]; then
+            count=1
+        fi
+    fi
+    if [ $count -eq 0 ]; then
+        $ffmpegCmd -y -loglevel error -rw_timeout 1000000 -re -i $source -c:a copy -c:v copy -bsf:v h264_mp4toannexb -f hls -hls_list_size 5 -hls_wrap 10 -hls_time 10 $hlsPath/$name/$name.m3u8 >> $logPath/streams/$name.log 2>&1 &
+        echo $! > $runPath/$name.pid
+    fi
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] [INFO] $name start" >> $logPath/iptvstreaming.log
     return 0
 }
 
+# cache stream info
+cacheStreams() {
+    local server=`hostname`
+    local MYSQL=`which mysql`
+    #get the updateTime in MySql
+    sqlQueryUpdateTime="select max(updateTime) from ${RDATABASE}.stream where server ='$server';"
+    CONNECTION="$MYSQL -h$RHOST -u$RUSER -p$RPASSWORD --default-character-set=utf8 -A -N"
+    mysqlUpdateTime="$($CONNECTION -e "$sqlQueryUpdateTime" 2>/dev/null)"
+    
+    #get the updateTime in Redis
+    redisCmd=`which redis-cli`
+    redisUpdateTime=`$redisCmd<<-EOF
+    get streamUpdateTime
+    exit
+EOF`
+    
+    #if inconsistent, update redis cache
+    if (`test "$mysqlUpdateTime" != "$redisUpdateTime" `||`test -z "$redisUpdateTime"`);then
+        refreshRedisUpdateTime=`$redisCmd<<-EOF
+        set streamUpdateTime "$mysqlUpdateTime"
+        exit
+EOF`
+        sql="select streamName,source from ${RDATABASE}.stream where server ='$server';"
+        CONNECTION="$MYSQL -h$RHOST -u$RUSER -p$RPASSWORD --default-character-set=utf8 -A -N"
+        results="$($CONNECTION -e "$sql" 2>/dev/null)"
+        
+        #cache results in redis
+        streamsInfo=""
+        for var in ${results[*]}
+        do
+          streamsInfo=$streamsInfo" "$var
+        done   
+        redis=`$redisCmd<<-EOF
+        DEL streams
+        hmset streams $streamsInfo
+        exit
+EOF`
+    fi
+}
 # start streaming source
 startAllStreams(){
     initDir
-    xml2streams
-    if [ $? -ne 0 ]; then
-    	rmDir
+    if [ $streamOrigin = xml ]; then
+        xml2streams
+        if [ $? -ne 0 ]; then
+    	    rmDir
+            return 1
+        fi
+        for name in `ls $streamPath`
+            do
+                source=`head -1 $streamPath/$name`
+                startStream $name $source
+                if [ $? -ne 0 ]; then
+                    return 1
+                fi
+            done
+    elif [ $streamOrigin = db ]; then
+        if [ $cached = on ]; then
+            local count=`ps -ef|grep redis-server|grep -v grep|wc -l`
+            if [ $count -eq 0 ]; then
+                RedisServer=`which redis-server`
+                if [ $? -ne 0 ]; then
+                    echo -e "[\033[1;31mERROR:\033[0m] redis is not installed"
+                    return 1
+                fi
+                $RedisServer > /dev/null 2>&1 &
+            fi
+            
+            cacheStreams
+            redisCmd=`which redis-cli`
+            #get cached streamNames from redis
+            names=`$redisCmd<<-EOF
+            hkeys streams
+            exit
+EOF`
+            for name in ${names[*]}
+               do
+                   source=`$redisCmd<<-EOF
+                    hget streams $name
+                    exit
+EOF`    
+                   startStream $name $source
+               done
+        else
+            local server=`hostname`
+            local MYSQL=`which mysql`
+            sql="select streamName,source from ${RDATABASE}.stream where server ='$server';"
+            CONNECTION="$MYSQL -h$RHOST -u$RUSER -p$RPASSWORD --default-character-set=utf8 -A -N"
+            while read name source
+                do
+                    startStream $name $source
+                done< <(echo $sql | $CONNECTION 2>/dev/null)
+        fi
+    else
+        echo -e "[\033[1;31mERROR:\033[0m] wrong sourceOrigin configuration"
         return 1
     fi
-    for name in `ls $streamPath`
-        do
-            startStream $name
-            if [ $? -ne 0 ]; then
-                return 1
-            fi
-        done
     $daemonPath/iptvstreamingd &
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] [INFO] iptvstreaming start manually" >> $logPath/iptvstreaming.log
+    return 0
+}
+
+# stop a stream by stream file
+stopStream(){
+    local name=$1
+    if [ ! -f $runPath/${name}.pid ]; then
+        return 0
+    fi
+    local pid=`head -1 $runPath/${name}.pid`
+    local count=1
+    if [ ! -d /proc/$pid ]; then
+        count=0
+    fi
+    if [ $count -ne 0 ]; then
+        kill -9 $pid
+        rm -f $runPath/${name}.pid
+        rm -rf $hlsPath/$name
+    fi
     return 0
 }
 
 # stop checking,streaming source and remove all additional directories
 stopAllStreams(){
     ps -ef|grep iptvstreamingd|grep -v grep|awk '{print $2}'|xargs kill -9
-    local count=`ps -ef|grep ffmpeg|grep -v grep|wc -l`
-    if [ $count -ne 0 ]; then
-        ps -ef|grep ffmpeg|grep -v grep|awk '{print $2}'|xargs kill -9
-    fi
+    #local count=`ps -ef|grep ffmpeg|grep -v grep|wc -l`
+    #if [ $count -ne 0 ]; then
+    #    ps -ef|grep ffmpeg|grep -v grep|awk '{print $2}'|xargs kill -9
+    #fi
+    for pidFile in `ls $runPath`
+        do
+            name=${pidFile%.*}
+            stopStream $name
+        done
     rmDir
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] [INFO] iptvstreaming stop manually" >> $logPath/iptvstreaming.log
     return 0
+}
+
+getAliveStreamCount() {
+    local count=0
+    for pidFile in `ls $runPath`
+        do
+            pid=`head -1 $runPath/$pidFile`
+            if [ -d /proc/$pid ]; then
+                (( count++ ))
+            fi
+        done
+    return $count
+}
+
+# restart a Stream by stream name
+restartStream() {
+    local name=$1
+    local source=$2
+    stopStream $name
+    startStream $name $source
 }
 
 RES_COL=60

@@ -1,5 +1,29 @@
 #! /bin/bash
 
+
+installSoftware() {
+    if [ $1 = redis ]; then
+        soft=`which redis-server 2>&1`
+    else
+        soft=`which $1 2>&1`
+    fi
+    if [ $? -eq 0 ]; then
+        return 0
+    fi
+    echo -e "[\033[1;32mINFO:\033[0m] Install $1 ..."
+    system=$(head -1 /etc/issue|awk '{print $1}')
+    if [ $system = CentOS ]; then
+        yum -y install $1
+    elif [ $system = Ubuntu ]; then
+        if [ $1 = redis ]; then
+            apt-get -y install redis-server
+        else
+            apt-get -y install $1
+        fi
+    else
+        echo -e "[\033[1;31mWARNING:\033[0m] you should install $1 by yourself"
+    fi    
+}
 echo -e "[\033[1;32mINFO:\033[0m] Start to install IPTV streaming"
 
 # installation path of iptv streaming program, can be modified
@@ -20,16 +44,9 @@ echo -e "[\033[1;32mINFO:\033[0m] Replace the absolute path with $installPath"
 sed -i "s%/usr/local/IPTVStreaming%$installPath%g" `grep /usr/local/IPTVStreaming -rl $installPath`
 sed -i "s%/usr/local/IPTVStreaming%$installPath%g" uninstall.sh
 
-# for python command
-echo -e "[\033[1;32mINFO:\033[0m] Install python..."
-system=$(set `head -1 /etc/issue`;echo $1)
-if (`test $system = 'CentOS'`); then
-    yum -y install python
-elif (`test $system = 'Ubuntu'`); then
-    apt-get -y install python
-else
-    echo -e "[\033[1;31mWARNING:\033[0m] you should install python by yourself"
-fi
+# install necessary softwar
+installSoftware python
+installSoftware redis
 
 # intallPathstall ffmpeg (default installed)
 

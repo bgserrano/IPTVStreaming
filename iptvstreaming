@@ -70,7 +70,9 @@ stop () {
 # restart all streams
 restart() {
     stop
-    start
+    if [ $? -eq 0 ]; then
+        start
+    fi
 }
 
 # status of all streams
@@ -78,10 +80,14 @@ iptvstatus() {
     local count=`ps -ef|grep iptvstreamingd|grep -v grep|wc -l`
     if [ $count -eq 0 ]; then
         echo -e "[\033[1;32mSTATUS:\033[0m]IPTVStreaming not running."
+        RETVAL=1
     else
-        count=`ps -ef|grep ffmpeg|grep -v grep|wc -l`
-        echo -e "[\033[1;32mSTATUS:\033[0m] IPTVStreaming is running. There are $count streams running."
+        getAliveStreamCount
+        local streamCount=$?
+        echo -e "[\033[1;32mSTATUS:\033[0m] IPTVStreaming is running. There are $streamCount streams running."
+        RETVAL=0
     fi
+    return $RETVAL
 }
 
 # service command
@@ -97,6 +103,15 @@ case "$1" in
         ;;
     status)
         iptvstatus
+        ;;
+    startStream)
+        startStream $2
+        ;;
+    stopStream)
+        stopStream $2
+        ;;
+    resartStream)
+        restartStream $2
         ;;
     *)
         echo -e $"[\033[1;32mUsage:\033[0m] $BASENAME {start|stop|restart|status}"

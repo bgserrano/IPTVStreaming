@@ -6,25 +6,68 @@
 # source functions
 . $libPath/functions
 
+check() {
+    local name=$1
+    local source=$2
+    if [ -f $runPath/${name}.pid ]; then
+        local pid=`head -1 $runPath/${name}.pid`
+        if [ -d /proc/$pid ]; then
+            return 0
+        fi
+    fi
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] [ERROR] $name stoped" >> $logPath/iptvstreaming.log
+    startStream $name $source
+}
+
 # check the streams status
 rotateCheck() {
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] [INFO] rotate check begin" >> $logPath/iptvstreaming.log
     local all=0
     local disconnect=0
-    for pidFile in `ls $runPath`
-        do
-            if [ -f $runPath/$pidFile ]; then
+    if [ $streamOrigin = xml ]; then
+        for name in `ls $streamPath`
+            do
                 (( all++ ))
-                local pid=`head -1 $runPath/$pidFile`
-                local count=`ps -ef|awk '{print $2}'|grep $pid|wc -l`
-                if [ $count -eq 0 ]; then
+                source=`head -1 $streamPath/$name`
+                check $name $source
+                if [ $? -ne 0 ]; then
                     (( disconnect++ ))
-                    local name=${pidFile%.*}
-                    echo "[$(date '+%Y-%m-%d %H:%M:%S')] [ERROR] $name stoped" >> $logPath/iptvstreaming.log
-                    startStream $name
-                fi                    
-            fi
-        done
+                fi
+            done
+    elif [ $streamOrigin = db ]; then
+        if [ $cached = on ]; then
+            redisCmd=`which redis-cli`
+            names=`$redisCmd<<-EOF
+            hkeys streams
+            exit
+EOF`
+            for name in ${names[*]}
+                do
+                    (( all++ ))
+                    source=`$redisCmd<<-EOF
+                    hget streams $name
+                    exit
+EOF`
+                    check $name $source
+                    if [ $? -ne 0 ]; then
+                        (( disconnect++ ))
+                    fi
+                done
+        else
+            local server=`hostname`
+            local MYSQL=`which mysql`
+            sql="select streamName,source from ${RDATABASE}.stream where server='$server'"
+            CONNECTION="$MYSQL -h$RHOST -u$RUSER -p$RPASSWORD --default-character-set=utf8 -A -N"
+            while read name source
+                do
+                    (( all++ ))
+                    check $name $source
+                    if [ $? -ne 0 ]; then
+                        (( disconnect++ ))
+                    fi
+                done< <(echo $sql | $CONNECTION 2>/dev/null)
+        fi
+    fi
     if [ $disconnect -ne 0 ]; then
         echo "[$(date '+%Y-%m-%d %H:%M:%S')] [FATAL] there are $disconnect/$all streams disconnected" >> $logPath/iptvstreaming.log
     fi
@@ -33,6 +76,9 @@ rotateCheck() {
 
 while true
     do
-        rotateCheck
         sleep $checkInterval
+        if [ $streamOrigin = db ] && [ $cached = on ]; then
+            cacheStreams
+        fi
+        rotateCheck
     done
