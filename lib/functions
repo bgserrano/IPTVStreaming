@@ -79,7 +79,7 @@ startStream() {
         fi
     fi
     if [ $count -eq 0 ]; then
-        $ffmpegCmd -y -loglevel error -rw_timeout 1000000 -re -i $source -c:a copy -c:v copy -bsf:v h264_mp4toannexb -f hls -hls_list_size 5 -hls_wrap 10 -hls_time 10 $hlsPath/$name/$name.m3u8 >> $logPath/streams/$name.log 2>&1 &
+        nohup $ffmpegCmd -y -loglevel error -rw_timeout 1000000 -re -i $source -c:a copy -c:v copy -bsf:v h264_mp4toannexb -f hls -hls_list_size 5 -hls_wrap 10 -hls_time 10 $hlsPath/$name/$name.m3u8 >> $logPath/streams/$name.log 2>&1 &
         echo $! > $runPath/$name.pid
     fi
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] [INFO] $name start" >> $logPath/iptvstreaming.log
@@ -153,7 +153,7 @@ startAllStreams(){
                 fi
                 $RedisServer > /dev/null 2>&1 &
             fi
-            
+            sleep 1
             cacheStreams
             redisCmd=`which redis-cli`
             #get cached streamNames from redis
@@ -214,11 +214,13 @@ stopAllStreams(){
     #if [ $count -ne 0 ]; then
     #    ps -ef|grep ffmpeg|grep -v grep|awk '{print $2}'|xargs kill -9
     #fi
-    for pidFile in `ls $runPath`
-        do
-            name=${pidFile%.*}
-            stopStream $name
-        done
+    if [ -d $runPath ]; then
+        for pidFile in `ls $runPath`
+            do
+                name=${pidFile%.*}
+                stopStream $name
+            done
+    fi
     rmDir
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] [INFO] iptvstreaming stop manually" >> $logPath/iptvstreaming.log
     return 0
@@ -226,13 +228,15 @@ stopAllStreams(){
 
 getAliveStreamCount() {
     local count=0
-    for pidFile in `ls $runPath`
-        do
-            pid=`head -1 $runPath/$pidFile`
-            if [ -d /proc/$pid ]; then
-                (( count++ ))
-            fi
-        done
+    if [ -d $runPath ]; then
+        for pidFile in `ls $runPath`
+            do
+                pid=`head -1 $runPath/$pidFile`
+                if [ -d /proc/$pid ]; then
+                    (( count++ ))
+                fi
+            done
+    fi
     return $count
 }
 

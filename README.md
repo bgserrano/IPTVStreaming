@@ -24,7 +24,8 @@ After installation, you may see these file in /usr/local/IPTVStreaming folder:
 
 * if your server is `Ubuntu` operating system, please change the default shell environment dash to bash using command: `sudo dpkg-reconfigure dash`
 * you must make sure the server's `hostname` is same as the information stored in database:
-    * CentOS: vim /etc/sysconfig/network, add or modify HOSTNAME=name
+    * CentOS 6,5: vim /etc/sysconfig/network, add or modify HOSTNAME=name
+    * CentOS 7: vim /etc/hostname, modify hostname directly
     * Ubuntu: vim /etc/hostname, modify hostname directly
 * you cn modify the installation path which is /usr/local/IPTVStreaming by default in install.sh
 * you can get stream information(name,source) from database or xml file by set streamOrigin in cfg/iptvagent.cfg and cached is used to cache the information retrieved from database
