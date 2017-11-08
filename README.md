@@ -9,7 +9,7 @@
 
 `IPTVStreaming` is available on GitHub, you can clone and install it as follows:
 
-$ git clone https://github.com/lazarangelov/IPTVStreaming.git  
+$ git clone https://github.com/AlexanderJLiu/IPTVStreaming.git  
 $ cd IPTVStreaming  
 $ ./install.sh
 
